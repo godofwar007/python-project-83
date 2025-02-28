@@ -30,6 +30,6 @@ start:
 	uv run gunicorn -w 5 -b 0.0.0.0:$(PORT) page_analyzer:app
 
 render-start:
-	gunicorn -w 5 -b 0.0.0.0:$(PORT) page_analyzer:app
+	python3 -m gunicorn -w 5 -b 0.0.0.0:10000 page_analyzer:app
 
 .PHONY: install test lint selfcheck check build
