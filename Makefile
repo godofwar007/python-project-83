@@ -14,13 +14,10 @@ push:
 	git add .; git commit -m 'some changes'; git push
 
 lint:
-	ruff check gendiff tests
-
-check: 
-	test lint
+	uv run ruff check .
 
 format:
-	ruff check gendiff tests --fix
+	uv run ruff check . --fix
 
 build:
 	./build.sh
