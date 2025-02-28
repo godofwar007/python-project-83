@@ -1,11 +1,11 @@
 from flask import Flask
-import psycopg2
+# import psycopg2
 from .config import Config
 
 app = Flask(__name__)
 app.config.from_object(Config)
 
-conn = psycopg2.connect(app.config['DATABASE_URL'])
+# conn = psycopg2.connect(app.config['DATABASE_URL'])
 
 
 @app.route('/')

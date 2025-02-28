@@ -25,10 +25,11 @@ format:
 build:
 	./build.sh
 
+PORT ?= 8000
 start:
-	uv run gunicorn -w 5 -b 0.0.0.0:$(PORT) page_analyzer.app:app
+	uv run gunicorn -w 5 -b 0.0.0.0:$(PORT) page_analyzer:app
 
 render-start:
-	gunicorn -w 5 -b 0.0.0.0:$(PORT) page_analyzer.app:app
+	gunicorn -w 5 -b 0.0.0.0:$(PORT) page_analyzer:app
 
 .PHONY: install test lint selfcheck check build
