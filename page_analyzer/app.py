@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 
 # import psycopg2
 from .config import Config
@@ -11,7 +11,8 @@ app.config.from_object(Config)
 
 @app.route('/')
 def index():
-    return "Hello, Page Analyzer!"
+    text = 'Мой первый что-то в проекте'
+    return render_template('index.html', text=text)
 
 
 if __name__ == "__main__":
