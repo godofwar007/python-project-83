@@ -10,6 +10,7 @@
             <th>ID</th>
             <th>URL</th>
             <th>Дата создания</th>
+            <th>Последняя проверка</th>
         </tr>
     </thead>
     <tbody>
@@ -20,11 +21,16 @@
                 <a href="{{ url_for('url_show', id=url.id) }}">{{ url.name }}</a>
             </td>
             <td>{{ url.created_at.strftime('%Y-%m-%d') if url.created_at else '' }}</td>
+            <td>
+                {% if url.last_check %}
+                {{ url.last_check.strftime('%Y-%m-%d') }}
+                {% else %}
+                -
+                {% endif %}
+            </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
-<a href="{{ url_for('index') }}" class="btn btn-link">
-    Добавить новый URL
-</a>
+<a href="{{ url_for('index') }}" class="btn btn-link">Добавить новый URL</a>
 {% endblock %}

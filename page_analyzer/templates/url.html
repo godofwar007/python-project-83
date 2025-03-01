@@ -18,7 +18,37 @@
         <td>{{ url.created_at.strftime('%Y-%m-%d') if url.created_at else '' }}</td>
     </tr>
 </table>
-<a href="{{ url_for('urls') }}" class="btn btn-link">
-    Назад к списку URL
-</a>
+
+<!-- Форма для создания проверки -->
+<form action="{{ url_for('url_checks', id=url.id) }}" method="post">
+    <button type="submit" class="btn btn-primary" data-test="check-btn">Проверить</button>
+</form>
+
+<h2>История проверок</h2>
+<table class="table" data-test="checks">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Код ответа</th>
+            <th>h1</th>
+            <th>title</th>
+            <th>description</th>
+            <th>Дата создания</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for check in checks %}
+        <tr>
+            <td>{{ check.id }}</td>
+            <td>{{ check.status_code }}</td>
+            <td>{{ check.h1 }}</td>
+            <td>{{ check.title }}</td>
+            <td>{{ check.description }}</td>
+            <td>{{ check.created_at.strftime('%Y-%m-%d') if check.created_at else '' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="{{ url_for('urls') }}" class="btn btn-link">Назад к списку URL</a>
 {% endblock %}

@@ -15,19 +15,6 @@ def get_db_connection():
                             cursor_factory=RealDictCursor)
 
 
-def query_db(query, params=(), commit=False, one=False):
-    conn = get_db_connection()
-    with conn.cursor() as cur:
-        cur.execute(query, params)
-        if commit:
-            conn.commit()
-            result = None
-        else:
-            result = cur.fetchone() if one else cur.fetchall()
-    conn.close()
-    return result
-
-
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
@@ -76,12 +63,39 @@ def url_show(id):
     curs = conn.cursor()
     curs.execute("SELECT * FROM urls WHERE id = %s", (id,))
     url = curs.fetchone()
-    curs.close()
-    conn.close()
     if url is None:
         flash("URL не найден", "error")
+        curs.close()
+        conn.close()
         return redirect(url_for('urls'))
-    return render_template('url.html', url=url)
+
+    curs.execute(
+        "SELECT id, created_at FROM url_checks WHERE url_id = %s "
+        "ORDER BY created_at DESC", (id,))
+    checks = curs.fetchall()
+    curs.close()
+    conn.close()
+    return render_template('url.html', url=url, checks=checks)
+
+
+@app.route('/urls/<int:id>/checks', methods=['POST'])
+def url_checks(id):
+    conn = get_db_connection()
+    curs = conn.cursor()
+    curs.execute("SELECT * FROM urls WHERE id = %s", (id,))
+    url = curs.fetchone()
+    if url is None:
+        flash("URL не найден", "error")
+        curs.close()
+        conn.close()
+        return redirect(url_for('urls'))
+
+    curs.execute("INSERT INTO url_checks (url_id) VALUES (%s)", (id,))
+    conn.commit()
+    curs.close()
+    conn.close()
+    flash("Проверка успешно создана", "success")
+    return redirect(url_for('url_show', id=id))
 
 
 if __name__ == "__main__":
