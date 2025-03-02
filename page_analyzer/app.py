@@ -1,6 +1,6 @@
 import psycopg2
 import requests
-import tldextract
+from bs4 import BeautifulSoup
 from flask import Flask, flash, redirect, render_template, request, url_for
 from psycopg2.extras import RealDictCursor
 
@@ -93,6 +93,8 @@ def url_show(id):
         curs.execute("""
             SELECT
                 id,
+                h1,
+                description,
                 status_code,
                 title,
                 created_at
@@ -126,13 +128,20 @@ def url_checks(id):
 
         status_code = response.status_code
 
-        extracted = tldextract.extract(url["name"])
-        title = extracted.domain
+        soup = BeautifulSoup(response.text, "html.parser")
+        h1 = soup.find("h1")
+        title = soup.find("title")
+        meta = soup.find("meta", attrs={"name": "description"})
+
+        h1_value = h1.get_text(strip=True) if h1 else None
+        title_value = title.get_text(strip=True) if title else ""
+        description_value = meta.get(
+            "content", "").strip() if meta else None
 
         curs.execute(
-            "INSERT INTO url_checks (url_id, status_code, "
-            "title) VALUES (%s, %s, %s)",
-            (id, status_code, title)
+            "INSERT INTO url_checks (url_id, status_code, h1, title,"
+            "description) VALUES (%s, %s, %s, %s, %s)",
+            (id, status_code, h1_value, title_value, description_value)
         )
         conn.commit()
     conn.close()

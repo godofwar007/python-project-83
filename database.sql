@@ -10,6 +10,6 @@ CREATE TABLE IF NOT EXISTS url_checks (
     status_code INTEGER NOT NULL,
     h1 TEXT,
     title VARCHAR(255) NOT NULL,
-    description VARCHAR(255) NOT NULL,
+    description VARCHAR(255),
     created_at DATE DEFAULT CURRENT_DATE
 );
