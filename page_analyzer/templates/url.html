@@ -3,14 +3,14 @@
 {% block title %}Детали URL{% endblock %}
 
 {% block content %}
-<h1>Детали URL</h1>
+<h1>Сайт: {{ url.name }}</h1>
 <table class="table" data-test="url">
     <tr>
         <th>ID</th>
         <td>{{ url.id }}</td>
     </tr>
     <tr>
-        <th>URL</th>
+        <th>Название</th>
         <td>{{ url.name }}</td>
     </tr>
     <tr>
@@ -19,9 +19,8 @@
     </tr>
 </table>
 
-<!-- Форма для создания проверки -->
 <form action="{{ url_for('url_checks', id=url.id) }}" method="post">
-    <button type="submit" class="btn btn-primary" data-test="check-btn">Проверить</button>
+    <button type="submit" class="btn btn-primary" data-test="check-btn">Запустить проверку</button>
 </form>
 
 <h2>История проверок</h2>
