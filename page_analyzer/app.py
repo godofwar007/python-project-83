@@ -42,7 +42,7 @@ def index():
             conn.commit()
         conn.close()
 
-        flash("URL успешно добавлен", "success")
+        flash("Страница успешно добавлена", "success")
         return redirect(url_for('url_show', id=new_id))
 
     return render_template('index.html')
