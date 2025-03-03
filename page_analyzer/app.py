@@ -145,7 +145,7 @@ def url_checks(id):
         )
         conn.commit()
     conn.close()
-    flash("Проверка успешно создана", "success")
+    flash("Страница успешно проверена", "success")
     return redirect(url_for('url_show', id=id))
 
 
