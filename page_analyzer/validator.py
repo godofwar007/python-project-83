@@ -2,18 +2,17 @@ from urllib.parse import urlparse
 
 
 def validate_url(url):
+    error = ["Некорректный URL"]
 
-    errors = []
-
-    if not url:
-        errors.append("URL не может быть пустым")
-        return errors
-
-    if len(url) > 255:
-        errors.append("URL не может превышать 255 символов")
+    if not url or len(url) > 255:
+        return error
 
     parsed_url = urlparse(url)
-    if not parsed_url.scheme or not parsed_url.netloc:
-        errors.append("Некорректный URL")
 
-    return errors
+    if not parsed_url.scheme or not parsed_url.netloc:
+        return error
+
+    if parsed_url.scheme not in {"http", "https"}:
+        return error
+
+    return []
