@@ -5,7 +5,7 @@ from flask import Flask, flash, redirect, render_template, request, url_for
 from psycopg2.extras import RealDictCursor
 
 from .config import Config
-from .validator import validate_url, normalize_url
+from .validator import normalize_url, validate_url
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -30,7 +30,7 @@ def create_url():
     if errors:
         for err in errors:
             flash(err, "error")
-        return render_template('index.html')
+        return render_template('index.html'), 422
 
     conn = get_db_connection()
     with conn.cursor() as curs:
@@ -141,7 +141,8 @@ def url_checks(id):
         description_value = meta.get("content", "").strip() if meta else None
 
         curs.execute(
-            "INSERT INTO url_checks (url_id, status_code, h1, title, description) VALUES (%s, %s, %s, %s, %s)",
+            "INSERT INTO url_checks (url_id, status_code, h1, title, "
+            "description) VALUES (%s, %s, %s, %s, %s)",
             (id, status_code, h1_value, title_value, description_value)
         )
         conn.commit()
