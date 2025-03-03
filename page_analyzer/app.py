@@ -32,9 +32,9 @@ def index():
             curs.execute("SELECT id FROM urls WHERE name = %s", (url,))
             existing_url = curs.fetchone()
             if existing_url:
-                flash("Такой URL уже существует", "error")
+                flash("Страница уже существует", "error")
                 conn.close()
-                return render_template('index.html')
+                return redirect(url_for('url_show', id=existing_url["id"]))
 
             curs.execute(
                 "INSERT INTO urls (name) VALUES (%s) RETURNING id", (url,))
