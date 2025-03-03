@@ -9,11 +9,10 @@
         <p class="text-center text-muted mb-4">
             Бесплатно проверьте сайты на SEO-пригодность
         </p>
-        <form method="POST" action="{{ url_for('index') }}">
+        <form method="POST" action="{{ url_for('create_url') }}">
             <div class="input-group mb-3">
                 <input type="text" name="url" class="form-control" placeholder="https://example.com" aria-label="URL">
                 <input type="submit" class="btn btn-primary btn-lg ms-3 px-5 text-uppercase mx-3" value="Проверить">
-
             </div>
         </form>
     </div>

@@ -17,36 +17,38 @@ def get_db_connection():
                             cursor_factory=RealDictCursor)
 
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/', methods=['GET'])
 def index():
-    if request.method == 'POST':
-        url = request.form.get('url')
-        url = normalize_url(url)
-        errors = validate_url(url)
-        if errors:
-            for err in errors:
-                flash(err, "error")
-            return render_template('index.html')
-
-        conn = get_db_connection()
-        with conn.cursor() as curs:
-            curs.execute("SELECT id FROM urls WHERE name = %s", (url,))
-            existing_url = curs.fetchone()
-            if existing_url:
-                flash("Страница уже существует", "error")
-                conn.close()
-                return redirect(url_for('url_show', id=existing_url["id"]))
-
-            curs.execute(
-                "INSERT INTO urls (name) VALUES (%s) RETURNING id", (url,))
-            new_id = curs.fetchone()["id"]
-            conn.commit()
-        conn.close()
-
-        flash("Страница успешно добавлена", "success")
-        return redirect(url_for('url_show', id=new_id))
-
     return render_template('index.html')
+
+
+@app.route('/urls', methods=['POST'])
+def create_url():
+    url = request.form.get('url')
+    url = normalize_url(url)
+    errors = validate_url(url)
+    if errors:
+        for err in errors:
+            flash(err, "error")
+        return render_template('index.html')
+
+    conn = get_db_connection()
+    with conn.cursor() as curs:
+        curs.execute("SELECT id FROM urls WHERE name = %s", (url,))
+        existing_url = curs.fetchone()
+        if existing_url:
+            flash("Страница уже существует", "error")
+            conn.close()
+            return redirect(url_for('url_show', id=existing_url["id"]))
+
+        curs.execute(
+            "INSERT INTO urls (name) VALUES (%s) RETURNING id", (url,))
+        new_id = curs.fetchone()["id"]
+        conn.commit()
+    conn.close()
+
+    flash("Страница успешно добавлена", "success")
+    return redirect(url_for('url_show', id=new_id))
 
 
 @app.route('/urls', methods=['GET'])
@@ -136,12 +138,10 @@ def url_checks(id):
 
         h1_value = h1.get_text(strip=True) if h1 else None
         title_value = title.get_text(strip=True) if title else ""
-        description_value = meta.get(
-            "content", "").strip() if meta else None
+        description_value = meta.get("content", "").strip() if meta else None
 
         curs.execute(
-            "INSERT INTO url_checks (url_id, status_code, h1, title,"
-            "description) VALUES (%s, %s, %s, %s, %s)",
+            "INSERT INTO url_checks (url_id, status_code, h1, title, description) VALUES (%s, %s, %s, %s, %s)",
             (id, status_code, h1_value, title_value, description_value)
         )
         conn.commit()
