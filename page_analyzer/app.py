@@ -5,7 +5,7 @@ from flask import Flask, flash, redirect, render_template, request, url_for
 from psycopg2.extras import RealDictCursor
 
 from .config import Config
-from .validator import validate_url
+from .validator import validate_url, normalize_url
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -21,6 +21,7 @@ def get_db_connection():
 def index():
     if request.method == 'POST':
         url = request.form.get('url')
+        url = normalize_url(url)
         errors = validate_url(url)
         if errors:
             for err in errors:

@@ -16,3 +16,12 @@ def validate_url(url):
         return error
 
     return []
+
+
+def normalize_url(url):
+    parsed = urlparse(url, scheme="http")
+    scheme = parsed.scheme.lower()
+    netloc = parsed.netloc.lower()
+    if not netloc:
+        netloc = parsed.path.lower()
+    return f"{scheme}://{netloc}"
