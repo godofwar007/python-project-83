@@ -15,12 +15,15 @@ def get_url(url):
         curs.execute("SELECT id FROM urls WHERE name = %s", (url,))
         existing_url = curs.fetchone()
         if existing_url:
+            flash("Страница уже существует", "error")
             conn.close()
             return existing_url["id"]
 
         curs.execute(
             "INSERT INTO urls (name) VALUES (%s) RETURNING id", (url,))
         new_id = curs.fetchone()["id"]
+        flash("Страница успешно добавлена", "success")
+
         conn.commit()
     conn.close()
     return new_id

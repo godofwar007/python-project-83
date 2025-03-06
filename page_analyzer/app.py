@@ -39,9 +39,6 @@ def create_url():
 
     url_id = get_url(url)
 
-    flash("Страница уже существует" if url_id
-          else "Страница успешно добавлена", "success")
-
     return redirect(url_for('url_show', id=url_id))
 
 
