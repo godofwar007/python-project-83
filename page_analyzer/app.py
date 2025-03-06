@@ -1,20 +1,25 @@
-import psycopg2
-import requests
-from bs4 import BeautifulSoup
-from flask import Flask, flash, redirect, render_template, request, url_for
-from psycopg2.extras import RealDictCursor
+import os
 
-from .config import Config
+import requests
+from dotenv import load_dotenv
+from flask import Flask, flash, redirect, render_template, request, url_for
+
+from .functions import (
+    get_db_connection,
+    get_url,
+    get_url_by_id,
+    get_urls,
+    parse_url,
+)
 from .validator import normalize_url, validate_url
 
+load_dotenv()
+SECRET_KEY = os.getenv('SECRET_KEY')
+DATABASE_URL = os.getenv('DATABASE_URL')
+
 app = Flask(__name__)
-app.config.from_object(Config)
-app.secret_key = app.config.get("SECRET_KEY")
-
-
-def get_db_connection():
-    return psycopg2.connect(app.config.get("DATABASE_URL"),
-                            cursor_factory=RealDictCursor)
+app.secret_key = SECRET_KEY
+app.config['DATABASE_URL'] = DATABASE_URL
 
 
 @app.route('/', methods=['GET'])
@@ -32,81 +37,23 @@ def create_url():
             flash(err, "error")
         return render_template('index.html'), 422
 
-    conn = get_db_connection()
-    with conn.cursor() as curs:
-        curs.execute("SELECT id FROM urls WHERE name = %s", (url,))
-        existing_url = curs.fetchone()
-        if existing_url:
-            flash("Страница уже существует", "error")
-            conn.close()
-            return redirect(url_for('url_show', id=existing_url["id"]))
+    url_id = get_url(url)
 
-        curs.execute(
-            "INSERT INTO urls (name) VALUES (%s) RETURNING id", (url,))
-        new_id = curs.fetchone()["id"]
-        conn.commit()
-    conn.close()
+    flash("Страница уже существует" if url_id
+          else "Страница успешно добавлена", "success")
 
-    flash("Страница успешно добавлена", "success")
-    return redirect(url_for('url_show', id=new_id))
+    return redirect(url_for('url_show', id=url_id))
 
 
 @app.route('/urls', methods=['GET'])
 def urls():
-    conn = get_db_connection()
-    with conn.cursor() as curs:
-        curs.execute("""
-            SELECT
-                u.id,
-                u.name,
-                u.created_at,
-                (
-                    SELECT created_at
-                    FROM url_checks
-                    WHERE url_checks.url_id = u.id
-                    ORDER BY created_at DESC
-                    LIMIT 1
-                ) AS last_check_date,
-                (
-                    SELECT status_code
-                    FROM url_checks
-                    WHERE url_checks.url_id = u.id
-                    ORDER BY created_at DESC
-                    LIMIT 1
-                ) AS last_check_code
-            FROM urls AS u
-            ORDER BY u.id DESC
-        """)
-        urls_data = curs.fetchall()
-    conn.close()
+    urls_data = get_urls()
     return render_template('urls.html', urls=urls_data)
 
 
 @app.route('/urls/<int:id>', methods=['GET'])
 def url_show(id):
-    conn = get_db_connection()
-    with conn.cursor() as curs:
-        curs.execute("SELECT * FROM urls WHERE id = %s", (id,))
-        url = curs.fetchone()
-        if url is None:
-            flash("URL не найден", "error")
-            conn.close()
-            return redirect(url_for('urls'))
-
-        curs.execute("""
-            SELECT
-                id,
-                h1,
-                description,
-                status_code,
-                title,
-                created_at
-            FROM url_checks
-            WHERE url_id = %s
-            ORDER BY created_at DESC
-        """, (id,))
-        checks = curs.fetchall()
-    conn.close()
+    checks, url = get_url_by_id(id)
     return render_template('url.html', url=url, checks=checks)
 
 
@@ -129,16 +76,8 @@ def url_checks(id):
             conn.close()
             return redirect(url_for('url_show', id=id))
 
-        status_code = response.status_code
-
-        soup = BeautifulSoup(response.text, "html.parser")
-        h1 = soup.find("h1")
-        title = soup.find("title")
-        meta = soup.find("meta", attrs={"name": "description"})
-
-        h1_value = h1.get_text(strip=True) if h1 else None
-        title_value = title.get_text(strip=True) if title else ""
-        description_value = meta.get("content", "").strip() if meta else None
+        status_code, h1_value, title_value, description_value = parse_url(
+            response)
 
         curs.execute(
             "INSERT INTO url_checks (url_id, status_code, h1, title, "
