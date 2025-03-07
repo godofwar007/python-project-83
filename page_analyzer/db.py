@@ -1,5 +1,6 @@
+from functools import wraps
+
 import psycopg2
-from bs4 import BeautifulSoup
 from flask import current_app, flash, redirect, url_for
 from psycopg2.extras import RealDictCursor
 
@@ -9,14 +10,21 @@ def get_db_connection():
     return psycopg2.connect(database_url, cursor_factory=RealDictCursor)
 
 
-def get_url(url):
-    conn = get_db_connection()
+def connection(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        with get_db_connection() as conn:
+            return func(*args, conn=conn, **kwargs)
+    return wrapper
+
+
+@connection
+def get_url(url, conn):
     with conn.cursor() as curs:
         curs.execute("SELECT id FROM urls WHERE name = %s", (url,))
         existing_url = curs.fetchone()
         if existing_url:
             flash("Страница уже существует", "error")
-            conn.close()
             return existing_url["id"]
 
         curs.execute(
@@ -25,12 +33,11 @@ def get_url(url):
         flash("Страница успешно добавлена", "success")
 
         conn.commit()
-    conn.close()
     return new_id
 
 
-def get_urls():
-    conn = get_db_connection()
+@connection
+def get_urls(conn):
     with conn.cursor() as curs:
         curs.execute("""
             SELECT
@@ -55,18 +62,16 @@ def get_urls():
             ORDER BY u.id DESC
         """)
         urls_data = curs.fetchall()
-    conn.close()
     return urls_data
 
 
-def get_url_by_id(id):
-    conn = get_db_connection()
+@connection
+def get_url_by_id(id, conn):
     with conn.cursor() as curs:
         curs.execute("SELECT * FROM urls WHERE id = %s", (id,))
         url = curs.fetchone()
         if url is None:
             flash("URL не найден", "error")
-            conn.close()
             return redirect(url_for('urls'))
 
         curs.execute("""
@@ -82,19 +87,27 @@ def get_url_by_id(id):
             ORDER BY created_at DESC
         """, (id,))
         checks = curs.fetchall()
-    conn.close()
     return checks, url
 
 
-def parse_url(response):
-    status_code = response.status_code
-    soup = BeautifulSoup(response.text, "html.parser")
-    h1 = soup.find("h1")
-    title = soup.find("title")
-    meta = soup.find("meta", attrs={"name": "description"})
+@connection
+def url_check(id, conn):
+    with conn.cursor() as curs:
+        curs.execute("SELECT * FROM urls WHERE id = %s", (id,))
+        url = curs.fetchone()
+        if url is None:
+            flash("URL не найден", "error")
+            return redirect(url_for('urls'))
+    return url
 
-    h1_value = h1.get_text(strip=True) if h1 else None
-    title_value = title.get_text(strip=True) if title else ""
-    description_value = meta.get("content", "").strip() if meta else None
 
-    return status_code, h1_value, title_value, description_value
+@connection
+def add_tags(id, status_code, h1_value, title_value, description_value, conn):
+    with conn.cursor() as curs:
+        curs.execute(
+            "INSERT INTO url_checks (url_id, status_code, h1, title, "
+            "description) VALUES (%s, %s, %s, %s, %s)",
+            (id, status_code, h1_value, title_value, description_value)
+        )
+        conn.commit()
+    return redirect(url_for('url_show', id=id))

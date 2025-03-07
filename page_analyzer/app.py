@@ -4,13 +4,14 @@ import requests
 from dotenv import load_dotenv
 from flask import Flask, flash, redirect, render_template, request, url_for
 
-from .functions import (
-    get_db_connection,
+from .db import (
+    add_tags,
     get_url,
     get_url_by_id,
     get_urls,
-    parse_url,
+    url_check,
 )
+from .parsing import parse_url
 from .validator import normalize_url, validate_url
 
 load_dotenv()
@@ -56,33 +57,18 @@ def url_show(id):
 
 @app.route('/urls/<int:id>/checks', methods=['POST'])
 def url_checks(id):
-    conn = get_db_connection()
-    with conn.cursor() as curs:
-        curs.execute("SELECT * FROM urls WHERE id = %s", (id,))
-        url = curs.fetchone()
-        if url is None:
-            flash("URL не найден", "error")
-            conn.close()
-            return redirect(url_for('urls'))
+    url = url_check(id)
+    try:
+        response = requests.get(url["name"])
+        response.raise_for_status()
+    except requests.RequestException:
+        flash("Произошла ошибка при проверке", "error")
+        return redirect(url_for('url_show', id=id))
 
-        try:
-            response = requests.get(url["name"])
-            response.raise_for_status()
-        except requests.RequestException:
-            flash("Произошла ошибка при проверке", "error")
-            conn.close()
-            return redirect(url_for('url_show', id=id))
+    status_code, h1_value, title_value, description_value = parse_url(response)
 
-        status_code, h1_value, title_value, description_value = parse_url(
-            response)
+    add_tags(id, status_code, h1_value, title_value, description_value)
 
-        curs.execute(
-            "INSERT INTO url_checks (url_id, status_code, h1, title, "
-            "description) VALUES (%s, %s, %s, %s, %s)",
-            (id, status_code, h1_value, title_value, description_value)
-        )
-        conn.commit()
-    conn.close()
     flash("Страница успешно проверена", "success")
     return redirect(url_for('url_show', id=id))
 
