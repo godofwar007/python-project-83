@@ -6,6 +6,7 @@ from flask import Flask, flash, redirect, render_template, request, url_for
 
 from .db import (
     add_tags,
+    get_db_connection,
     get_url,
     get_url_by_id,
     get_urls,
@@ -37,27 +38,30 @@ def create_url():
         for err in errors:
             flash(err, "error")
         return render_template('index.html'), 422
-
-    url_id = get_url(url)
+    connection = get_db_connection()
+    url_id = get_url(url, connection)
 
     return redirect(url_for('url_show', id=url_id))
 
 
 @app.route('/urls', methods=['GET'])
 def urls():
-    urls_data = get_urls()
+    connection = get_db_connection()
+    urls_data = get_urls(connection)
     return render_template('urls.html', urls=urls_data)
 
 
 @app.route('/urls/<int:id>', methods=['GET'])
 def url_show(id):
-    checks, url = get_url_by_id(id)
+    connection = get_db_connection()
+    checks, url = get_url_by_id(id, connection)
     return render_template('url.html', url=url, checks=checks)
 
 
 @app.route('/urls/<int:id>/checks', methods=['POST'])
 def url_checks(id):
-    url = url_check(id)
+    connection = get_db_connection()
+    url = url_check(id, connection)
     try:
         response = requests.get(url["name"])
         response.raise_for_status()
@@ -66,8 +70,9 @@ def url_checks(id):
         return redirect(url_for('url_show', id=id))
 
     status_code, h1_value, title_value, description_value = parse_url(response)
-
-    add_tags(id, status_code, h1_value, title_value, description_value)
+    connection = get_db_connection()
+    add_tags(id, status_code, h1_value, title_value,
+             description_value, connection)
 
     flash("Страница успешно проверена", "success")
     return redirect(url_for('url_show', id=id))

@@ -1,4 +1,3 @@
-from functools import wraps
 
 import psycopg2
 from flask import current_app, flash, redirect, url_for
@@ -10,15 +9,6 @@ def get_db_connection():
     return psycopg2.connect(database_url, cursor_factory=RealDictCursor)
 
 
-def connection(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        with get_db_connection() as conn:
-            return func(*args, conn=conn, **kwargs)
-    return wrapper
-
-
-@connection
 def get_url(url, conn):
     with conn.cursor() as curs:
         curs.execute("SELECT id FROM urls WHERE name = %s", (url,))
@@ -36,7 +26,6 @@ def get_url(url, conn):
     return new_id
 
 
-@connection
 def get_urls(conn):
     with conn.cursor() as curs:
         curs.execute("""
@@ -65,7 +54,6 @@ def get_urls(conn):
     return urls_data
 
 
-@connection
 def get_url_by_id(id, conn):
     with conn.cursor() as curs:
         curs.execute("SELECT * FROM urls WHERE id = %s", (id,))
@@ -90,7 +78,6 @@ def get_url_by_id(id, conn):
     return checks, url
 
 
-@connection
 def url_check(id, conn):
     with conn.cursor() as curs:
         curs.execute("SELECT * FROM urls WHERE id = %s", (id,))
@@ -101,7 +88,6 @@ def url_check(id, conn):
     return url
 
 
-@connection
 def add_tags(id, status_code, h1_value, title_value, description_value, conn):
     with conn.cursor() as curs:
         curs.execute(
